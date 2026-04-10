@@ -1,0 +1,50 @@
+.hero {
+  height: 45vh;
+  min-height: 300px;
+}
+
+@media (min-width: 768px) {
+  .hero { height: 60vh; }
+}
+
+@media (min-width: 1024px) {
+  .hero { height: 65vh; }
+}
+
+@media (min-width: 1280px) {
+  .hero { height: 70vh; }
+}
+
+/* Word fade */
+@keyframes wordFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wordFade {
+  opacity: 0;
+  animation: wordFade 0.8s ease-out forwards;
+}
+
+/* Button slide */
+@keyframes buttonSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.buttonSlide {
+  opacity: 0;
+  animation: buttonSlide 1s ease-out forwards;
+}

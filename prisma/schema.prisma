@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// ENUMS
+// ==============================
+enum Role {
+  ADMIN
+  PILOT
+  STUDENT
+  USER
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum PriceType {
+  DAY
+  FLY
+}
+
+enum RentalType {
+  SCOOTY
+  CAMERA
+}
+
+// ==============================
+// AUTH
+// ==============================
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phoneNo       String    @unique
+  password      String
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  role          Role      @default(USER)
+
+  sessions Session[]
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==============================
+// PACKAGES
+// ==============================
+model Package {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  duration    Int      @default(0)
+  isActive    Boolean  @default(true)
+  details     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  media    Media[]
+  bookings Booking[]
+}
+
+model Media {
+  id        Int       @id @default(autoincrement())
+  type      MediaType
+  url       String
+  packageId Int
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+// ==============================
+// STAYS (HOTELS)
+// ==============================
+model Stay {
+  id        Int       @id @default(autoincrement())
+  name      String
+  price     Decimal   @db.Decimal(10, 2)
+  priceType PriceType @default(DAY)
+  images    Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  bookings Booking[]
+}
+
+// ==============================
+// RENTALS (SCOOTY / CAMERA)
+// ==============================
+model Rental {
+  id        Int        @id @default(autoincrement())
+  name      String
+  price     Decimal    @db.Decimal(10, 2)
+  priceType PriceType
+  type      RentalType
+  image     Json?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  bookings BookingRental[]
+}
+
+// ==============================
+// BOOKING
+// ==============================
+model Booking {
+  id Int @id @default(autoincrement())
+
+  guestName  String
+  guestEmail String?
+  guestPhone String
+  guestCount Int     @default(1)
+
+  bookingDate DateTime @default(now())
+
+  totalAmount Decimal @db.Decimal(10, 2)
+  advancePaid Decimal @db.Decimal(10, 2) @default(0)
+  balanceDue  Decimal @db.Decimal(10, 2)
+
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpayRefundId  String?
+
+  refundAmount Decimal?  @db.Decimal(10, 2)
+  cancelledAt  DateTime?
+  cancelToken  String?   @unique
+
+  status        BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  packageId Int?
+  package   Package? @relation(fields: [packageId], references: [id])
+
+  stayId Int?
+  stay   Stay? @relation(fields: [stayId], references: [id])
+
+  rentals BookingRental[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==============================
+// BOOKING <-> RENTAL JOIN TABLE
+// ==============================
+model BookingRental {
+  bookingId Int
+  rentalId  Int
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rental  Rental  @relation(fields: [rentalId], references: [id])
+
+  @@id([bookingId, rentalId])
+}

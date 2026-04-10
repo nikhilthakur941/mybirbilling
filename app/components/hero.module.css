@@ -1,0 +1,36 @@
+.hero {
+  height: 70vh;
+  min-height: 450px;
+}
+
+@keyframes wordFade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wordFade {
+  opacity: 0;
+  animation: wordFade 0.8s ease-out forwards;
+}
+
+@keyframes buttonSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.buttonSlide {
+  opacity: 0;
+  animation: buttonSlide 1s ease-out forwards;
+}

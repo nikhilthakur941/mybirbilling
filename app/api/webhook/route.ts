@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
           razorpayOrderId: payment.order_id,
         },
         data: {
-          paymentStatus: "FAILED",
+          paymentStatus: "PENDING",
         },
       });
     }

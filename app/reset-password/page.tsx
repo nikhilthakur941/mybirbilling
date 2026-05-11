@@ -1,10 +1,9 @@
-
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -16,26 +15,36 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
 
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          password,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
+
+      setMessage(data.message);
+
+      if (res.ok) {
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
+
+    } catch (error) {
+      setMessage("Something went wrong");
+    }
 
     setLoading(false);
-    setMessage(data.message);
-
-    if (res.ok) {
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
-    }
   };
 
   return (
@@ -84,5 +93,13 @@ export default function ResetPasswordPage() {
         )}
       </form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

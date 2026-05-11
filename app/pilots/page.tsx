@@ -1,9 +1,12 @@
 // import Image from "next/image";
+import PilotsSection from "../components/PilotsSection";
+import Community from "../components/Community";
 
 export default function Home() {
   return (
   <main>
-    <h1>this is a demopage.</h1>
+    <PilotsSection />
+    <Community />
   </main>
   );
 }

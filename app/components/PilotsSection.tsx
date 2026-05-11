@@ -76,7 +76,7 @@ export default function PilotsSection() {
           ))}
         </div>
       </div>
-    </section>
+    </section>  
   );
 }
 

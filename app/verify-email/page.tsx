@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function VerifyEmail() {
+function VerifyEmailContent() {
   const params = useSearchParams();
 
   useEffect(() => {
@@ -21,7 +21,15 @@ export default function VerifyEmail() {
       alert("Email verified!");
       window.location.href = "/profile/settings";
     });
-  }, []);
+  }, [params]);
 
   return <p className="p-6">Verifying email...</p>;
+}
+
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={<p className="p-6">Loading...</p>}>
+      <VerifyEmailContent />
+    </Suspense>
+  );
 }

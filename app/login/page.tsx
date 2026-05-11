@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const params = useSearchParams();
 
   const [form, setForm] = useState({
@@ -16,12 +16,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ auto-hide session message
+  // auto-hide session message
   const [showMsg, setShowMsg] = useState(true);
 
   useEffect(() => {
     if (params.get("expired")) {
-      setTimeout(() => setShowMsg(false), 3000);
+      const timer = setTimeout(() => {
+        setShowMsg(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
   }, [params]);
 
@@ -30,11 +34,13 @@ export default function LoginPage() {
       ...form,
       [e.target.name]: e.target.value,
     });
+
     setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
 
     try {
@@ -51,6 +57,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
+
       setLoading(false);
 
       if (!res.ok) {
@@ -93,7 +100,7 @@ export default function LoginPage() {
           Login ✈️
         </h1>
 
-        {/* ✅ SESSION EXPIRED MESSAGE */}
+        {/* SESSION EXPIRED MESSAGE */}
         {params.get("expired") && showMsg && (
           <p className="text-red-500 text-center text-sm">
             Session expired, please login again
@@ -131,6 +138,7 @@ export default function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="accent-orange-500 w-4 h-4"
             />
+
             <span className="text-gray-700 font-medium">
               Remember me
             </span>
@@ -171,5 +179,13 @@ export default function LoginPage() {
         </p>
       </form>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

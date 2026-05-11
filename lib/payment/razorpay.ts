@@ -5,36 +5,20 @@ import crypto from "crypto";
    Environment Variables
 ===================================================== */
 
-const {
-  RAZORPAY_KEY_ID,
-  RAZORPAY_KEY_SECRET,
-} = process.env;
-
-// Safe fallback values for build time
-const razorpayKeyId = RAZORPAY_KEY_ID || "";
-const razorpaySecret = RAZORPAY_KEY_SECRET || "";
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
 
 /* =====================================================
-   Singleton Razorpay Instance
+   Razorpay Instance
 ===================================================== */
 
-declare global {
-  // Prevent multiple instances during hot reload
-  var _razorpayInstance: Razorpay | undefined;
-}
-
-const razorpay =
-  global._razorpayInstance ??
-  new Razorpay({
-    key_id: razorpayKeyId,
-    key_secret: razorpaySecret,
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  global._razorpayInstance = razorpay;
-}
-
-export { razorpay };
+export const razorpay =
+  razorpayKeyId && razorpaySecret
+    ? new Razorpay({
+        key_id: razorpayKeyId,
+        key_secret: razorpaySecret,
+      })
+    : null;
 
 /* =====================================================
    Helper: Create Razorpay Order
@@ -45,20 +29,16 @@ export async function createRazorpayOrder({
   receipt,
   notes,
 }: {
-  amount: number; // in rupees
+  amount: number;
   receipt: string;
   notes?: Record<string, string>;
 }) {
-  if (!razorpayKeyId || !razorpaySecret) {
-    throw new Error("Razorpay environment variables are missing");
-  }
-
-  if (!amount || amount <= 0) {
-    throw new Error("Invalid order amount");
+  if (!razorpay) {
+    throw new Error("Razorpay is not configured");
   }
 
   return await razorpay.orders.create({
-    amount: Math.round(amount * 100), // convert to paise
+    amount: Math.round(amount * 100),
     currency: "INR",
     receipt,
     notes,
@@ -74,27 +54,19 @@ export async function refundPayment({
   amount,
 }: {
   paymentId: string;
-  amount: number; // in rupees
+  amount: number;
 }) {
-  if (!razorpayKeyId || !razorpaySecret) {
-    throw new Error("Razorpay environment variables are missing");
-  }
-
-  if (!paymentId) {
-    throw new Error("Payment ID is required for refund");
-  }
-
-  if (!amount || amount <= 0) {
-    throw new Error("Invalid refund amount");
+  if (!razorpay) {
+    throw new Error("Razorpay is not configured");
   }
 
   return await razorpay.payments.refund(paymentId, {
-    amount: Math.round(amount * 100), // convert to paise
+    amount: Math.round(amount * 100),
   });
 }
 
 /* =====================================================
-   Helper: Verify Payment Signature
+   Verify Payment Signature
 ===================================================== */
 
 export function verifyPaymentSignature({
@@ -106,6 +78,10 @@ export function verifyPaymentSignature({
   paymentId: string;
   signature: string;
 }) {
+  if (!razorpaySecret) {
+    return false;
+  }
+
   const body = `${orderId}|${paymentId}`;
 
   const expectedSignature = crypto
@@ -117,7 +93,7 @@ export function verifyPaymentSignature({
 }
 
 /* =====================================================
-   Helper: Verify Webhook Signature
+   Verify Webhook Signature
 ===================================================== */
 
 export function verifyWebhookSignature({
@@ -127,6 +103,10 @@ export function verifyWebhookSignature({
   rawBody: string;
   signature: string;
 }) {
+  if (!razorpaySecret) {
+    return false;
+  }
+
   const expectedSignature = crypto
     .createHmac("sha256", razorpaySecret)
     .update(rawBody)

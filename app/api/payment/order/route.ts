@@ -1,13 +1,16 @@
-import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+import { razorpay } from "@/lib/payment/razorpay";
 
 export async function POST(req: Request) {
   try {
+    // ✅ Check Razorpay instance
+    if (!razorpay) {
+      return NextResponse.json(
+        { error: "Razorpay not configured" },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json();
 
     let { amount, receipt } = body;
@@ -21,7 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ ALWAYS treat input as ₹
+    // ✅ Treat input as rupees
     const amountInRupees = Number(amount);
 
     if (isNaN(amountInRupees) || amountInRupees <= 0) {
@@ -31,12 +34,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Convert ONLY ONCE → paise
+    // ✅ Convert to paise
     const amountInPaise = amountInRupees * 100;
 
     console.log("Final amount (paise):", amountInPaise);
 
-    // ✅ Razorpay limit (₹5 lakh)
+    // ✅ Razorpay max limit
     if (amountInPaise > 50000000) {
       return NextResponse.json(
         { error: "Amount exceeds ₹5 lakh limit" },
@@ -44,6 +47,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ Create order
     const order = await razorpay.orders.create({
       amount: amountInPaise,
       currency: "INR",

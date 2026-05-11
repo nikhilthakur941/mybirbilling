@@ -4,30 +4,32 @@ import fs from "fs";
 import { generateInvoice } from "@/lib/invoice";
 
 /* ================================
-   SMTP TRANSPORTER (GMAIL)
+   SAFE TRANSPORTER (LAZY INIT)
 ================================ */
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+export function getTransporter() {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error("❌ Missing EMAIL_USER or EMAIL_PASS in env");
+  }
 
-// Optional: verify SMTP
-transporter
-  .verify()
-  .then(() => console.log("✅ SMTP Ready"))
-  .catch((err) => console.error("❌ SMTP Error:", err));
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+}
 
 /* ================================
    EMAIL VERIFICATION
 ================================ */
 
 export async function sendVerificationEmail(email: string, token: string) {
+  const transporter = getTransporter();
+
   const link = `${process.env.NEXT_PUBLIC_BASE_URL}/verify?token=${token}`;
 
   await transporter.sendMail({
@@ -59,6 +61,8 @@ export async function sendVerificationEmail(email: string, token: string) {
 ================================ */
 
 export async function sendResetEmail(email: string, token: string) {
+  const transporter = getTransporter();
+
   const link = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${token}`;
 
   await transporter.sendMail({
@@ -86,29 +90,25 @@ export async function sendResetEmail(email: string, token: string) {
 }
 
 /* ================================
-   BOOKING EMAIL + INVOICE + CANCEL
+   BOOKING EMAIL + INVOICE
 ================================ */
 
 export async function sendBookingEmail(booking: any) {
   try {
     console.log("📧 Sending booking email to:", booking.guestEmail);
 
-    // =========================
-    // 🛵 Rentals
-    // =========================
+    const transporter = getTransporter();
+
+    // Rentals
     const rentalsList =
       booking.rentals?.length > 0
         ? booking.rentals.map((r: any) => r.rental.name).join(", ")
         : "None";
 
-    // =========================
-    // ❌ CANCEL LINK
-    // =========================
+    // Cancel link
     const cancelLink = `${process.env.NEXT_PUBLIC_BASE_URL}/cancel-booking?token=${booking.cancelToken}`;
 
-    // =========================
-    // 🧾 GENERATE INVOICE (SAFE)
-    // =========================
+    // Invoice generation
     let fullPath: string | null = null;
     let invoicePath: string | null = null;
 
@@ -125,9 +125,7 @@ export async function sendBookingEmail(booking: any) {
       fullPath = null;
     }
 
-    // =========================
-    // 📧 SEND EMAIL
-    // =========================
+    // Send email
     await transporter.sendMail({
       from: `"MyBirBilling ✈️" <${process.env.EMAIL_USER}>`,
       to: booking.guestEmail,
@@ -176,34 +174,19 @@ export async function sendBookingEmail(booking: any) {
 
           <hr/>
 
-          <h3>❌ Need to cancel?</h3>
+          <h3>❌ Cancel Booking</h3>
 
           <a href="${cancelLink}"
-          style="
-            background:#ef4444;
-            color:white;
-            padding:10px 20px;
-            border-radius:6px;
-            text-decoration:none;
-            display:inline-block;
-            margin-top:10px;
-          ">
+          style="background:#ef4444;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">
             Cancel Booking
           </a>
 
           <p style="margin-top:20px;font-size:12px;color:gray">
             Cancellation may be subject to policy.
           </p>
-
-          <p style="margin-top:20px">
-            Thank you for choosing <b>MyBirBilling ✈️</b> ❤️
-          </p>
         </div>
       `,
 
-      // =========================
-      // 📎 ATTACHMENT (SAFE)
-      // =========================
       attachments: fullPath
         ? [
             {

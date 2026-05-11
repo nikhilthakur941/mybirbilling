@@ -4,10 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 // GET ONE
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+
   const rental = await prisma.rental.findUnique({
-    where: { id: Number(params.id) },
+    where: { id: Number(id) },
   });
 
   return NextResponse.json(rental);
@@ -16,22 +18,24 @@ export async function GET(
 // UPDATE
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const body = await req.json();
     const { name, price, type, images } = body;
 
     const priceType = type === "CAMERA" ? "FLY" : "DAY";
 
     const rental = await prisma.rental.update({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
       data: {
         name,
         price,
         type,
         priceType,
-        image: images, // ✅ JSON update
+        image: images,
       },
     });
 
@@ -47,11 +51,13 @@ export async function PUT(
 // DELETE
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     await prisma.rental.delete({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
     });
 
     return NextResponse.json({ success: true });

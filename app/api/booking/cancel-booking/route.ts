@@ -50,7 +50,8 @@ export async function POST(req: Request) {
     // 💰 Razorpay Refund
     if (
       refundAmount > 0 &&
-      booking.razorpayPaymentId
+      booking.razorpayPaymentId &&
+      razorpay
     ) {
       const refund = await razorpay.payments.refund(
         booking.razorpayPaymentId,

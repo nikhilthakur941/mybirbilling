@@ -2,7 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 
 /* =====================================================
-   Environment Variables Validation
+   Environment Variables
 ===================================================== */
 
 const {
@@ -10,17 +10,9 @@ const {
   RAZORPAY_KEY_SECRET,
 } = process.env;
 
-if (!RAZORPAY_KEY_ID) {
-  throw new Error("RAZORPAY_KEY_ID is missing in environment variables");
-}
-
-if (!RAZORPAY_KEY_SECRET) {
-  throw new Error("RAZORPAY_KEY_SECRET is missing in environment variables");
-}
-
-// Make TS happy (strict mode safe)
-const razorpayKeyId: string = RAZORPAY_KEY_ID;
-const razorpaySecret: string = RAZORPAY_KEY_SECRET;
+// Safe fallback values for build time
+const razorpayKeyId = RAZORPAY_KEY_ID || "";
+const razorpaySecret = RAZORPAY_KEY_SECRET || "";
 
 /* =====================================================
    Singleton Razorpay Instance
@@ -57,6 +49,10 @@ export async function createRazorpayOrder({
   receipt: string;
   notes?: Record<string, string>;
 }) {
+  if (!razorpayKeyId || !razorpaySecret) {
+    throw new Error("Razorpay environment variables are missing");
+  }
+
   if (!amount || amount <= 0) {
     throw new Error("Invalid order amount");
   }
@@ -80,6 +76,10 @@ export async function refundPayment({
   paymentId: string;
   amount: number; // in rupees
 }) {
+  if (!razorpayKeyId || !razorpaySecret) {
+    throw new Error("Razorpay environment variables are missing");
+  }
+
   if (!paymentId) {
     throw new Error("Payment ID is required for refund");
   }
@@ -95,7 +95,6 @@ export async function refundPayment({
 
 /* =====================================================
    Helper: Verify Payment Signature
-   (Used After Checkout Success)
 ===================================================== */
 
 export function verifyPaymentSignature({

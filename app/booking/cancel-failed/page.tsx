@@ -1,8 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function CancelFailedPage() {
+function CancelFailedContent() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -34,5 +35,13 @@ export default function CancelFailedPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function CancelFailedPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CancelFailedContent />
+    </Suspense>
   );
 }
